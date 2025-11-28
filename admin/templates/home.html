@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+   {% if username %}
+      <h1>Welcome back, {{ username }}!</h1>   
+      <a href="{{ url_for('second.logout') }}" class="btn btn-outline-info mt-3">Logout</a>
+   {% else %}
+      <h1>User not logged in!</h1>
+      <p>Please Login or Register to access.</p>
+      <a href="{{ url_for('second.login') }}" class="btn btn-outline-info mt-3">Login</a>
+      <a href="{{ url_for('second.register') }}" class="btn btn-outline-info mt-3">Register</a>
+   {% endif %}
+{% endblock content %}

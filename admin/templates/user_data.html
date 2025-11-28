@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% for message in get_flashed_messages() %}
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+{% endfor %}
+
+   <table id="data" class="table table-striped">
+   <tr>
+      <th>id</th>
+      <th>name</th>
+      <th>email</th>
+      <th>Role</th>
+      <th>password</th>
+      <th>Created</th>
+      <th>Action</th>
+      <th></th>
+   </tr>
+
+   {% for row in data %}
+   <tr>
+      <td>{{ row[0] }}</td> 
+      <td>{{ row[1] }}</td> 
+      <td>{{ row[2] }}</td>
+      <td>{{ row[3] }}</td>
+      <td>{{ row[4][:15] }}...</td> 
+      <td>{{ row[5] }}</td> 
+      <td>
+        <button 
+            type="button" 
+            class="btn btn-outline-primary btn-sm"
+            data-bs-toggle="modal" 
+            data-bs-target="#editUserModal"
+            onclick="openEditModal('{{ row[0] }}', '{{ row[1] }}', '{{ row[2] }}', '{{ row[3] }}')">
+            Edit
+        </button>
+      </td>
+      <td> 
+          <a href="/delete/{{ row[0] }}" onclick="confirmDelete(event, this)" class="btn btn-outline-danger btn-sm">Delete</a>
+      </td>
+   {% endfor %}
+   </tr>
+   </table>
+
+{% endblock content %}

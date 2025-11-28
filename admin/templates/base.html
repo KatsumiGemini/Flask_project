@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link href="{{url_for('static' ,filename='libs/sweetalert2/dist/sweetalert2.min.css')}}" rel="stylesheet" type="text/css" />
+
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css"  />
+    <link rel="stylesheet" href="assets/css/plugins.min.css" />
+    <link rel="stylesheet" href="assets/css/kaiadmin.min.css" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('second.static', filename='style.css') }}"/>
+
+    {% if title %}
+        <title>Flask Blog - {{ title }}</title>
+    {% else %}
+        <title>Flask Blog</title>
+    {% endif %}
+
+  <style>
+    .flash {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+    }
+    .success { background-color: #d4edda; color: #155724; }
+    .error { background-color: #f8d7da; color: #721c24; }
+    
+  </style>
+
+</head>
+<body>
+    <header class="site-header">
+      <nav class="navbar navbar-expand-md navbar-dark bg-steel fixed-top">
+        <div class="container">
+          <a class="navbar-brand mr-4" href="/admin">Kechno</a>
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggle" aria-controls="navbarToggle" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarToggle">
+            <div class="navbar-nav mr-auto">
+              <a class="nav-item nav-link" href="/admin">Home</a>
+              <a class="nav-item nav-link" href="/admin/userdata">User</a>
+            </div>
+            <div class="navbar-nav">
+              <a class="nav-item nav-link" href="/admin/login">Login</a>
+              <a class="nav-item nav-link" href="/admin/register">Register</a>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+    <main role="main" class="container">
+      <div class="row">
+        <div class="col-md-8">
+          {% block content %}{% endblock %}
+        </div>
+      </div>  
+    </main>
+
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="editForm"> <div class="modal-header">
+            <h5 class="modal-title" id="editUserModalLabel">Edit User</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+              <input type="hidden" name="user_id" id="modal-user-id">
+
+              <div class="mb-3">
+                  <label for="modal-name" class="form-label">Name</label>
+                  <input type="text" class="form-control" id="modal-name" name="name" required>
+              </div>
+
+              <div class="mb-3">
+                  <label for="modal-email" class="form-label">Email</label>
+                  <input type="email" class="form-control" id="modal-email" name="email" required>
+              </div>
+
+              <div class="mb-3">
+                  <label for="modal-role" class="form-label">Role</label>
+                   <select type="text" class="form-control" id="modal-role" name="role" style="appearance: auto; -webkit-appearance: auto; -moz-appearance: auto;" required>
+                      <option value="" disabled selected>Select a role</option>
+                      <option value="1">Admin</option>
+                      <option value="2">User</option>
+                      <option value="3">Staff</option>
+                  </select>
+              </div>
+
+              <div class="mb-3">
+                  <label for="modal-password" class="form-label">Password</label>
+                  <input type="text" class="form-control" id="modal-password" name="password">
+              </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary" id="saveChangesBtn">Save changes</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script src="{{url_for('static' ,filename='libs/sweetalert2/dist/sweetalert2.min.js')}}"></script>
+    <script src="{{url_for('static' ,filename='js/pages/sweetalerts.init.js')}}"></script>
+    <script src="/assets/js/bootstrap.bundle.min.js"></script>
+    <script src="/assets/js/plugins.min.js"></script>
+
+     <script>
+        function confirmDelete(event, form) {
+            if (!confirm("Are you sure you want to delete this item?")) {
+                event.preventDefault(); 
+            }
+        }
+
+        function openEditModal(id, name, email, role) {
+        // 1. Set the Modal Title/Label for context
+        document.getElementById('editUserModalLabel').textContent = 'Editing User: ' + name;
+        
+        // 2. Set the Hidden User ID (Crucial for later backend logic)
+        document.getElementById('modal-user-id').value = id;
+        
+        // 3. Set the form values for display in the input fields
+        document.getElementById('modal-name').value = name;
+        document.getElementById('modal-email').value = email;
+        document.getElementById('modal-role').value = role;
+        document.getElementById('modal-password').value = ''; 
+    }
+    </script>
+</body>
+</html>

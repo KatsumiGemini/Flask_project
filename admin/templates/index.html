@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome</title>
+
+    <!-- BOOTSTRAP 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            height: 100vh;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            font-family: "Poppins", sans-serif;
+        }
+
+        .top-nav {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .btn-custom {
+            backdrop-filter: blur(4px);
+            padding: 10px 22px;
+            border-radius: 30px;
+            margin-left: 10px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="top-nav">
+        <a href="{{ url_for('second.login') }}" class="btn btn-light btn-custom">Login</a>
+        <a href="{{ url_for('second.register') }}" class="btn btn-outline-light btn-custom">Register</a>
+    </div>
+
+    <h1>Welcome to My Website</h1>
+    <p class="mt-2">Explore and enjoy the experience.</p>
+
+    <a href="{{ url_for('second.home') }}" class="btn btn-light mt-3 btn-custom">Enter Site</a>
+
+</body>
+</html>
