@@ -1,9 +1,11 @@
 from flask import Flask, render_template
-from admin.second import second
+# from admin.second import second
+from admin import create_app
 
 app = Flask(__name__)
 
-app.register_blueprint(second, url_prefix="/admin")
+# app.register_blueprint(second, url_prefix="/admin")
+app = create_app()
 
 @app.route('/')
 def index():

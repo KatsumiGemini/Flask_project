@@ -22,19 +22,19 @@
 
    {% for row in data %}
    <tr>
-      <td>{{ row[0] }}</td> 
-      <td>{{ row[1] }}</td> 
-      <td>{{ row[2] }}</td>
-      <td>{{ row[3] }}</td>
-      <td>{{ row[4][:15] }}...</td> 
-      <td>{{ row[5] }}</td> 
+    <td>{{ row['id'] }}</td>
+    <td>{{ row['name'] }}</td>
+    <td>{{ row['email'] }}</td>
+    <td>{{ row['role_id'] }}</td>
+     <td>{{ row['password'][:15]}}...</td>
+    <td>{{ row['created_at'] }}</td>
       <td>
         <button 
             type="button" 
             class="btn btn-outline-primary btn-sm"
             data-bs-toggle="modal" 
             data-bs-target="#editUserModal"
-            onclick="openEditModal('{{ row[0] }}', '{{ row[1] }}', '{{ row[2] }}', '{{ row[3] }}')">
+            onclick="openEditModal('{{ row[id] }}', '{{ row[name] }}', '{{ row[email] }}', '{{ row[role_id] }}', '{{ row[password] }}')">
             Edit
         </button>
       </td>

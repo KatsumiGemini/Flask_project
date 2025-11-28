@@ -6,6 +6,6 @@ def create_app():
 
     # Register blueprint
     from .second import second
-    app.register_blueprint(second)
+    app.register_blueprint(second, url_prefix="/admin")
 
     return app

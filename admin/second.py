@@ -34,7 +34,7 @@ def user_data():
     except MySQLError as err:
         flash(f"Database Error: {err}", "danger")
         data = []
-    return render_template('user.html', title='User Page', data=data)
+    return render_template('user_data.html', title='User Page', data=data)
 
 # -------------------- REGISTER --------------------
 @second.route("/register", methods=["GET", "POST"])
@@ -79,13 +79,9 @@ def login():
         password = request.form['password']
 
         conn = get_db_connection()
-        cur = conn.cursor(dictionary=True) 
-
-        query = "SELECT name, email, password FROM users WHERE email = %s"
-        cur.execute(query, (email,))
-        user = cur.fetchone()
-
-        cur.close()
+        with conn.cursor(dictionary=True) as cur:
+            cur.execute("SELECT name, email, password FROM users WHERE email = %s", (email,))
+            user = cur.fetchone()
         conn.close()
 
         if user and check_password_hash(user['password'], password):
