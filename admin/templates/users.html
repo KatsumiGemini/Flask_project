@@ -34,7 +34,7 @@
             class="btn btn-outline-primary btn-sm"
             data-bs-toggle="modal" 
             data-bs-target="#editUserModal"
-            onclick="openEditModal('{{ row[id] }}', '{{ row[name] }}', '{{ row[email] }}', '{{ row[role_id] }}', '{{ row[password] }}')">
+            onclick="openEditModal('{{ row.id }}', '{{ row.name }}', '{{ row.email }}', '{{ row.role_id }}')">
             Edit
         </button>
       </td>

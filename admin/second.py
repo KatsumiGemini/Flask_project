@@ -1,5 +1,5 @@
 import mysql.connector
-from flask import Blueprint, render_template, request, url_for, flash, redirect, session
+from flask import Blueprint, render_template, request, url_for, flash, redirect, session, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from mysql.connector import Error as MySQLError
@@ -16,6 +16,7 @@ def get_db_connection():
     return con
 
 # ---------------------- HOME ------------------------
+
 @second.route('/')
 @second.route('/home')
 def home():
@@ -23,6 +24,7 @@ def home():
     return render_template('home.html', username=username)
 
 # -------------------- VIEW USERS --------------------
+
 @second.route("/users")
 def user_data():
     try:
@@ -37,6 +39,7 @@ def user_data():
     return render_template('users.html', title='User Page', data=data)
 
 # -------------------- REGISTER --------------------
+
 @second.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -72,6 +75,7 @@ def register():
     return render_template("register.html")
 
 # -------------------- LOGIN --------------------
+
 @second.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == 'POST':
@@ -102,6 +106,7 @@ def logout():
     return redirect(url_for('second.login'))
 
 # -------------------- DELETE USER --------------------
+
 @second.route('/delete/<int:id>')
 def delete(id):
     try:
@@ -114,3 +119,31 @@ def delete(id):
     except MySQLError as err:
         flash(f"Database Error: {err}", "danger")
     return redirect(url_for('second.user_data'))
+
+# -------------------- UPDATE USER --------------------
+
+@second.route("/update_user", methods=["POST"])
+def update_user():
+    user_id = request.form.get("user_id")
+    name = request.form.get("name")
+    email = request.form.get("email")
+    role = int(request.form["role"]) 
+    password = request.form.get("password")
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        if password.strip() == "":
+            query = "UPDATE users SET name=%s, email=%s, role_id=%s WHERE id=%s"
+            cursor.execute(query, (name, email, role, user_id))
+        else:
+            query = "UPDATE users SET name=%s, email=%s, role_id=%s, password=%s WHERE id=%s"
+            cursor.execute(query, (name, email, role, password, user_id))
+
+        conn.commit()
+        cursor.close()
+        return jsonify({"status": "success"})
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
