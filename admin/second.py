@@ -23,7 +23,7 @@ def home():
     return render_template('home.html', username=username)
 
 # -------------------- VIEW USERS --------------------
-@second.route("/userdata")
+@second.route("/users")
 def user_data():
     try:
         conn = get_db_connection()
@@ -34,7 +34,7 @@ def user_data():
     except MySQLError as err:
         flash(f"Database Error: {err}", "danger")
         data = []
-    return render_template('user_data.html', title='User Page', data=data)
+    return render_template('users.html', title='User Page', data=data)
 
 # -------------------- REGISTER --------------------
 @second.route("/register", methods=["GET", "POST"])

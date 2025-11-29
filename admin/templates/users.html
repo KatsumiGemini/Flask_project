@@ -39,7 +39,11 @@
         </button>
       </td>
       <td> 
-          <a href="/delete/{{ row[0] }}" onclick="confirmDelete(event, this)" class="btn btn-outline-danger btn-sm">Delete</a>
+        <a href="{{ url_for('second.delete', id=row['id']) }}" 
+        onclick="confirmDelete(event, this)" 
+        class="btn btn-outline-danger btn-sm">
+        Delete
+        </a>
       </td>
    {% endfor %}
    </tr>
