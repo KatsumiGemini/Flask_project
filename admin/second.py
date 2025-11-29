@@ -1,6 +1,10 @@
+import os
+from PIL import Image
+import secrets
 import mysql.connector
-from flask import Blueprint, render_template, request, url_for, flash, redirect, session, jsonify
+from flask import Blueprint, render_template, request, url_for, flash, redirect, session, jsonify,abort
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from datetime import datetime
 from mysql.connector import Error as MySQLError
 
@@ -14,19 +18,67 @@ def get_db_connection():
         database="flask_db"
     )
     return con
-
 # ---------------------- HOME ------------------------
-
 @second.route('/')
 @second.route('/home')
 def home():
     username = session.get('username')
-    return render_template('home.html', username=username)
+    posts = [
+        {
+            'author': 'Corey Schafer',
+            'title': 'Blog Post 1',
+            'content': 'First post content',
+            'date_posted': 'April 20, 2018'
+        },
+        {
+            'author': 'Jane Doe',
+            'title': 'Blog Post 2',
+            'content': 'Second post content',
+            'date_posted': 'April 21, 2018'
+        }
+    ]
+    return render_template('home.html', username=username, posts=posts)
 
-# -------------------- VIEW USERS --------------------
+# ---------------------- POST ------------------------
+@second.route('/post')
+def post():
+    return render_template('post.html')
 
+@second.route("/create-blog", methods=["GET", "POST"])
+def create_blog():
+    if 'user_id' not in session:
+        flash("Please log in first.", "warning")
+        return redirect(url_for("second.login"))
+
+    if request.method == "POST":
+        title = request.form['title']
+        content = request.form['content']
+        user_id = session['user_id']
+        created_at = datetime.now()
+        updated_at = datetime.now()
+
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO posts (user_id, title, content, created_at, updated_at) VALUES (%s, %s, %s, %s, %s)",
+                    (user_id, title, content, created_at, updated_at)
+                )
+                conn.commit()
+            flash("Blog created successfully!", "success")
+        except Exception as e:
+            flash(f"Error: {e}", "danger")
+        finally:
+            conn.close()
+
+        return redirect(url_for("second.create_blog"))  
+
+    return render_template("post.html", username=session.get("username"))
+
+# -------------------- USER DATA --------------------
 @second.route("/users")
 def user_data():
+    
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -84,11 +136,12 @@ def login():
 
         conn = get_db_connection()
         with conn.cursor(dictionary=True) as cur:
-            cur.execute("SELECT name, email, password FROM users WHERE email = %s", (email,))
+            cur.execute("SELECT id, name, email, password FROM users WHERE email = %s", (email,))
             user = cur.fetchone()
         conn.close()
 
         if user and check_password_hash(user['password'], password):
+            session['user_id'] = user['id']
             session['username'] = user['name']
             flash('Login successful!', 'success')
             return redirect(url_for('second.home'))
@@ -98,6 +151,41 @@ def login():
         
     return render_template('login.html')
 
+# @second.route("/login", methods=["GET", "POST"])
+# def login():
+#     if request.method == "POST":
+#         email = request.form["email"]
+#         password = request.form["password"]
+
+#         conn = get_db_connection()
+#         cur = conn.cursor(dictionary=True)
+#         cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+#         user = cur.fetchone()
+#         cur.close()
+#         conn.close()
+
+#         if user and check_password_hash(user["password"], password):
+#             # Save user info in session
+#             session["user_id"] = user["id"]
+#             session["username"] = user["name"]
+#             session["role_id"] = user["role_id"]
+
+#             flash("Login successful!", "success")
+
+#             # Redirect based on role
+#             if user["role_id"] == 1:
+#                 return redirect(url_for("second.admin_dashboard"))
+#             elif user["role_id"] == 2:
+#                 return redirect(url_for("second.user_dashboard"))
+#             elif user["role_id"] == 3:
+#                 return redirect(url_for("second.staff_dashboard"))
+#             else:
+#                 flash("Role not recognized!", "danger")
+#                 return redirect(url_for("second.login"))
+#         else:
+#             flash("Invalid email or password", "danger")
+    
+#     return render_template("login.html")
 # -------------------- LOGOUT --------------------
 @second.route("/logout")
 def logout():
@@ -147,3 +235,85 @@ def update_user():
 
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
+    
+# -------------------- ACCOUNT UPDATE WITH PICTURE --------------------
+# @second.route("/account")
+# def account():
+#     if 'user_id' not in session:
+#         flash("Please log in first.", "warning")
+#         return redirect(url_for("second.login"))
+
+#     user_id = session['user_id']
+#     conn = get_db_connection()
+#     with conn.cursor(dictionary=True) as cur:
+#         cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+#         user = cur.fetchone()
+#     conn.close()
+
+#     return render_template('account.html', user=user, username=session.get('username'))
+
+def save_picture(form_picture):
+    upload_folder = os.path.join('static', 'uploads')
+    os.makedirs(upload_folder, exist_ok=True)
+
+    random_hex = secrets.token_hex(8)
+    _, f_ext = os.path.splitext(form_picture.filename)
+    picture_fn = random_hex + f_ext
+    picture_path = os.path.join(upload_folder, picture_fn)
+
+    output_size = (125, 125)
+    i = Image.open(form_picture)
+    i.thumbnail(output_size)
+    i.save(picture_path)
+
+    return picture_fn
+
+@second.route("/account", methods=["GET", "POST"])
+def account():
+    if 'user_id' not in session:
+        flash("Please log in first.", "warning")
+        return redirect(url_for("second.login"))
+
+    user_id = session['user_id']
+    conn = get_db_connection()
+    with conn.cursor(dictionary=True) as cur:
+        cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+        user = cur.fetchone()
+
+        if request.method == "POST":
+            username = request.form['username']
+            email = request.form['email']
+
+            # Handle image upload
+            if 'image' in request.files:
+                file = request.files['image']
+                if file.filename != '':
+                    picture_file = save_picture(file)
+
+                    
+                    if user['image']:
+                        old_path = os.path.join('static/uploads', user['image'])
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+
+                    cur.execute(
+                        "UPDATE users SET name=%s, email=%s, image=%s WHERE id=%s",
+                        (username, email, picture_file, user_id)
+                    )
+                else:
+                    cur.execute(
+                        "UPDATE users SET name=%s, email=%s WHERE id=%s",
+                        (username, email, user_id)
+                    )
+            else:
+                cur.execute(
+                    "UPDATE users SET name=%s, email=%s WHERE id=%s",
+                    (username, email, user_id)
+                )
+
+            conn.commit()
+            flash("Profile updated successfully!", "success")
+            return redirect(url_for('second.account'))
+
+    conn.close()
+    return render_template('account.html', user=user, username=session.get('username'))
