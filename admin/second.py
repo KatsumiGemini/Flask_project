@@ -9,7 +9,6 @@ from datetime import datetime
 from mysql.connector import Error as MySQLError
 
 second = Blueprint('second', __name__, static_folder='static', template_folder='templates')
-
 def get_db_connection():
     con = mysql.connector.connect(
         host="localhost",
@@ -18,25 +17,25 @@ def get_db_connection():
         database="flask_db"
     )
     return con
+
 # ---------------------- HOME ------------------------
 @second.route('/')
 @second.route('/home')
 def home():
     username = session.get('username')
-    posts = [
-        {
-            'author': 'Corey Schafer',
-            'title': 'Blog Post 1',
-            'content': 'First post content',
-            'date_posted': 'April 20, 2018'
-        },
-        {
-            'author': 'Jane Doe',
-            'title': 'Blog Post 2',
-            'content': 'Second post content',
-            'date_posted': 'April 21, 2018'
-        }
-    ]
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+    SELECT posts.id, posts.title, posts.content, posts.created_at, users.username AS username
+    FROM posts
+    JOIN users ON posts.user_id = users.id
+    ORDER BY posts.created_at DESC
+    """)
+    posts = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    
     return render_template('home.html', username=username, posts=posts)
 
 # ---------------------- POST ------------------------
@@ -97,7 +96,6 @@ def register():
     if request.method == "POST":
         username = request.form["username"]
         email = request.form["email"]
-        role = int(request.form["role"]) 
         password = request.form["password"]
         confirm_password = request.form["confirm_password"]
 
@@ -110,8 +108,8 @@ def register():
         try:
             conn = get_db_connection()
             cur = conn.cursor()
-            query = "INSERT INTO users (name, email, role_id, password, created_at) VALUES (%s, %s, %s, %s, %s)"
-            values = (username, email, role, hashed_password, datetime.now())
+            query = "INSERT INTO users (username, email, password) VALUES (%s, %s, %s )"
+            values = (username, email, hashed_password)
             cur.execute(query, values)
             conn.commit()
             cur.close()
@@ -136,13 +134,13 @@ def login():
 
         conn = get_db_connection()
         with conn.cursor(dictionary=True) as cur:
-            cur.execute("SELECT id, name, email, password FROM users WHERE email = %s", (email,))
+            cur.execute("SELECT id, username, email, password FROM users WHERE email = %s", (email,))
             user = cur.fetchone()
         conn.close()
 
         if user and check_password_hash(user['password'], password):
             session['user_id'] = user['id']
-            session['username'] = user['name']
+            session['username'] = user['username']
             flash('Login successful!', 'success')
             return redirect(url_for('second.home'))
         else:
