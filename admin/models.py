@@ -1,20 +1,18 @@
-from app import db
 from .extensions import db
+from flask_login import UserMixin
 from datetime import datetime
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
+    username = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    role_id = db.Column(db.Integer, nullable=False)
+    image_file = db.Column(db.String(200))
     password = db.Column(db.String(200), nullable=False)
-    image = db.Column(db.String(200), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    posts = db.relationship('Post', backref='author', lazy=True)
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     title = db.Column(db.String(200), nullable=False)
+    date_posted = db.Column(db.DateTime, default=datetime.utcnow)
     content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))

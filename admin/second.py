@@ -1,96 +1,53 @@
 import os
 from PIL import Image
 import secrets
-import mysql.connector
-from flask import Blueprint, render_template, request, url_for, flash, redirect, session, jsonify,abort
+from flask import Blueprint, render_template, request, url_for, flash, redirect, session, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.utils import secure_filename
 from datetime import datetime
-from mysql.connector import Error as MySQLError
+from .extensions import db
+from .models import User, Post
+from flask_login import login_user, logout_user, current_user, login_required
 
 second = Blueprint('second', __name__, static_folder='static', template_folder='templates')
-def get_db_connection():
-    con = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="root",
-        database="flask_db"
-    )
-    return con
 
 # ---------------------- HOME ------------------------
 @second.route('/')
 @second.route('/home')
+@login_required
 def home():
-    username = session.get('username')
-
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("""
-    SELECT posts.id, posts.title, posts.content, posts.created_at, users.username AS username
-    FROM posts
-    JOIN users ON posts.user_id = users.id
-    ORDER BY posts.created_at DESC
-    """)
-    posts = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    
-    return render_template('home.html', username=username, posts=posts)
+    posts = Post.query.join(User).add_columns(User.username, Post.id, Post.title, Post.content, Post.date_posted)\
+                      .order_by(Post.date_posted.desc()).all()
+    return render_template('home.html', username=session.get('username'), posts=posts)
 
 # ---------------------- POST ------------------------
-@second.route('/post')
-def post():
-    return render_template('post.html')
-
-@second.route("/create-blog", methods=["GET", "POST"])
+@second.route("/post", methods=["GET", "POST"])
+@login_required
 def create_blog():
-    if 'user_id' not in session:
-        flash("Please log in first.", "warning")
-        return redirect(url_for("second.login"))
-
     if request.method == "POST":
         title = request.form['title']
         content = request.form['content']
-        user_id = session['user_id']
-        created_at = datetime.now()
-        updated_at = datetime.now()
 
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "INSERT INTO posts (user_id, title, content, created_at, updated_at) VALUES (%s, %s, %s, %s, %s)",
-                    (user_id, title, content, created_at, updated_at)
-                )
-                conn.commit()
-            flash("Blog created successfully!", "success")
-        except Exception as e:
-            flash(f"Error: {e}", "danger")
-        finally:
-            conn.close()
+        post = Post(title=title, content=content, user_id=current_user.id)
+        db.session.add(post)
+        db.session.commit()
 
-        return redirect(url_for("second.create_blog"))  
+        flash("Blog created successfully!", "success")
+        return redirect(url_for("second.create_blog"))
 
-    return render_template("post.html", username=session.get("username"))
+    return render_template("post.html", username=current_user.username)
 
 # -------------------- USER DATA --------------------
 @second.route("/users")
+@login_required
 def user_data():
-    
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM users")
-        data = cursor.fetchall()
-        cursor.close()
-    except MySQLError as err:
+        data = User.query.all() 
+    except Exception as err:
         flash(f"Database Error: {err}", "danger")
         data = []
     return render_template('users.html', title='User Page', data=data)
 
 # -------------------- REGISTER --------------------
-
 @second.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -104,23 +61,12 @@ def register():
             return redirect(url_for("second.register"))
 
         hashed_password = generate_password_hash(password)
+        user = User(username=username, email=email, password=hashed_password)
+        db.session.add(user)
+        db.session.commit()
 
-        try:
-            conn = get_db_connection()
-            cur = conn.cursor()
-            query = "INSERT INTO users (username, email, password) VALUES (%s, %s, %s )"
-            values = (username, email, hashed_password)
-            cur.execute(query, values)
-            conn.commit()
-            cur.close()
-            conn.close()
-
-            flash("Account created successfully!", "success")
-            return redirect(url_for("second.register"))
-
-        except mysql.connector.Error as err:
-            flash(f"Database Error: {err}", "danger")
-            return redirect(url_for("second.register"))
+        flash("Account created successfully!", "success")
+        return redirect(url_for("second.register"))
 
     return render_template("register.html")
 
@@ -132,124 +78,57 @@ def login():
         email = request.form['email']
         password = request.form['password']
 
-        conn = get_db_connection()
-        with conn.cursor(dictionary=True) as cur:
-            cur.execute("SELECT id, username, email, password FROM users WHERE email = %s", (email,))
-            user = cur.fetchone()
-        conn.close()
-
-        if user and check_password_hash(user['password'], password):
-            session['user_id'] = user['id']
-            session['username'] = user['username']
+        user = User.query.filter_by(email=email).first()
+        if user and check_password_hash(user.password, password):
+            login_user(user)
+            session['username'] = user.username
             flash('Login successful!', 'success')
             return redirect(url_for('second.home'))
         else:
-            flash('Login Unsuccessful. Please check email and password', 'danger')
-            return render_template('login.html')
-        
+            flash('Login Unsuccessful. Check email and password', 'danger')
+
     return render_template('login.html')
 
-# @second.route("/login", methods=["GET", "POST"])
-# def login():
-#     if request.method == "POST":
-#         email = request.form["email"]
-#         password = request.form["password"]
 
-#         conn = get_db_connection()
-#         cur = conn.cursor(dictionary=True)
-#         cur.execute("SELECT * FROM users WHERE email = %s", (email,))
-#         user = cur.fetchone()
-#         cur.close()
-#         conn.close()
-
-#         if user and check_password_hash(user["password"], password):
-#             # Save user info in session
-#             session["user_id"] = user["id"]
-#             session["username"] = user["name"]
-#             session["role_id"] = user["role_id"]
-
-#             flash("Login successful!", "success")
-
-#             # Redirect based on role
-#             if user["role_id"] == 1:
-#                 return redirect(url_for("second.admin_dashboard"))
-#             elif user["role_id"] == 2:
-#                 return redirect(url_for("second.user_dashboard"))
-#             elif user["role_id"] == 3:
-#                 return redirect(url_for("second.staff_dashboard"))
-#             else:
-#                 flash("Role not recognized!", "danger")
-#                 return redirect(url_for("second.login"))
-#         else:
-#             flash("Invalid email or password", "danger")
-    
-#     return render_template("login.html")
 # -------------------- LOGOUT --------------------
 @second.route("/logout")
+@login_required
 def logout():
-    session.clear()
+    logout_user()
     flash("You have been logged out.", "info")
     return redirect(url_for('second.login'))
 
 # -------------------- DELETE USER --------------------
-
 @second.route('/delete/<int:id>')
+@login_required
 def delete(id):
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM users WHERE id = %s", (id,))
-        conn.commit()
-        cursor.close()
-        flash('User deleted successfully!', 'success')
-    except MySQLError as err:
-        flash(f"Database Error: {err}", "danger")
+    user = User.query.get_or_404(id)
+    db.session.delete(user)
+    db.session.commit()
+    flash('User deleted successfully!', 'success')
     return redirect(url_for('second.user_data'))
+
 
 # -------------------- UPDATE USER --------------------
 
 @second.route("/update_user", methods=["POST"])
+@login_required
 def update_user():
     user_id = request.form.get("user_id")
-    name = request.form.get("name")
-    email = request.form.get("email")
-    role = int(request.form["role"]) 
+    user = User.query.get_or_404(user_id)
+
+    user.username = request.form.get("name")
+    user.email = request.form.get("email")
+    user.role_id = int(request.form["role"])
+
     password = request.form.get("password")
+    if password.strip():
+        user.password = generate_password_hash(password)
 
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+    db.session.commit()
+    return jsonify({"status": "success"})
 
-        if password.strip() == "":
-            query = "UPDATE users SET name=%s, email=%s, role_id=%s WHERE id=%s"
-            cursor.execute(query, (name, email, role, user_id))
-        else:
-            query = "UPDATE users SET name=%s, email=%s, role_id=%s, password=%s WHERE id=%s"
-            cursor.execute(query, (name, email, role, password, user_id))
-
-        conn.commit()
-        cursor.close()
-        return jsonify({"status": "success"})
-
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
-    
 # -------------------- ACCOUNT UPDATE WITH PICTURE --------------------
-# @second.route("/account")
-# def account():
-#     if 'user_id' not in session:
-#         flash("Please log in first.", "warning")
-#         return redirect(url_for("second.login"))
-
-#     user_id = session['user_id']
-#     conn = get_db_connection()
-#     with conn.cursor(dictionary=True) as cur:
-#         cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
-#         user = cur.fetchone()
-#     conn.close()
-
-#     return render_template('account.html', user=user, username=session.get('username'))
-
 def save_picture(form_picture):
     upload_folder = os.path.join('static', 'uploads')
     os.makedirs(upload_folder, exist_ok=True)
@@ -259,59 +138,35 @@ def save_picture(form_picture):
     picture_fn = random_hex + f_ext
     picture_path = os.path.join(upload_folder, picture_fn)
 
-    output_size = (125, 125)
     i = Image.open(form_picture)
-    i.thumbnail(output_size)
+    i.thumbnail((125, 125))
     i.save(picture_path)
 
     return picture_fn
 
 @second.route("/account", methods=["GET", "POST"])
+@login_required
 def account():
-    if 'user_id' not in session:
-        flash("Please log in first.", "warning")
-        return redirect(url_for("second.login"))
+    user = current_user
 
-    user_id = session['user_id']
-    conn = get_db_connection()
-    with conn.cursor(dictionary=True) as cur:
-        cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
-        user = cur.fetchone()
+    if request.method == "POST":
+        user.username = request.form['username']
+        user.email = request.form['email']
 
-        if request.method == "POST":
-            username = request.form['username']
-            email = request.form['email']
+        if 'image' in request.files:
+            file = request.files['image']
+            if file.filename != '':
+                picture_file = save_picture(file)
 
-            # Handle image upload
-            if 'image' in request.files:
-                file = request.files['image']
-                if file.filename != '':
-                    picture_file = save_picture(file)
+                if user.image:
+                    old_path = os.path.join('static/uploads', user.image)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
 
-                    
-                    if user['image']:
-                        old_path = os.path.join('static/uploads', user['image'])
-                        if os.path.exists(old_path):
-                            os.remove(old_path)
+                user.image = picture_file
 
-                    cur.execute(
-                        "UPDATE users SET name=%s, email=%s, image=%s WHERE id=%s",
-                        (username, email, picture_file, user_id)
-                    )
-                else:
-                    cur.execute(
-                        "UPDATE users SET name=%s, email=%s WHERE id=%s",
-                        (username, email, user_id)
-                    )
-            else:
-                cur.execute(
-                    "UPDATE users SET name=%s, email=%s WHERE id=%s",
-                    (username, email, user_id)
-                )
+        db.session.commit()
+        flash("Profile updated successfully!", "success")
+        return redirect(url_for('second.account'))
 
-            conn.commit()
-            flash("Profile updated successfully!", "success")
-            return redirect(url_for('second.account'))
-
-    conn.close()
-    return render_template('account.html', user=user, username=session.get('username'))
+    return render_template('account.html', user=user, username=user.username)
