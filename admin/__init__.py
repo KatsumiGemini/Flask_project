@@ -17,9 +17,15 @@ def create_app():
     DB_HOST = os.getenv("DB_HOST")
     DB_NAME = os.getenv("DB_NAME")
 
+    user = 'testman'
+    password = 'Jhayg3309]]:P' 
+    mysql_url = 'vultr-prod-85f8d360-5bbf-4d05-ad2d-01cc47768728-vultr-prod-995c.vultrdb.com'
+    port_num = '16751' 
+
     app.config['SQLALCHEMY_DATABASE_URI'] = (
-        f"mysql+pymysql://testman:Jhayg3309%5D%5D%3AP@vultr-prod-85f8d360-5bbf-4d05-ad2d-01cc47768728-vultr-prod-995c.vultrdb.com:16751/sample_crud"
+        f'mysql+pymysql://{user}:{password}@{mysql_url}:{port_num}/sample_crud'
     )
+
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # Initialize extensions
