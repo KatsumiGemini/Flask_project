@@ -48,6 +48,7 @@ def user_data():
     return render_template('users.html', title='User Page', data=data)
 
 # -------------------- REGISTER --------------------
+
 @second.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -61,7 +62,7 @@ def register():
             return redirect(url_for("second.register"))
 
         hashed_password = generate_password_hash(password)
-        user = User(username=username, email=email, password=hashed_password)
+        user = User(username=username, email=email, password=hashed_password, image_file="default.jpg")
         db.session.add(user)
         db.session.commit()
 
