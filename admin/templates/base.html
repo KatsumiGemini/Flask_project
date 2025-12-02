@@ -46,7 +46,7 @@
     <header class="site-header">
       <nav class="navbar navbar-expand-md navbar-dark bg-steel fixed-top">
         <div class="container">
-          <a class="navbar-brand mr-4" href="/admin">Kechno</a>
+          <a class="navbar-brand mr-4" href="/admin">BLOG</a>
           <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggle" aria-controls="navbarToggle" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
@@ -56,40 +56,44 @@
               <a class="nav-item nav-link" href="/admin/post">Post</a>
               <a class="nav-item nav-link" href="/admin/users">User</a>
             </div>
-           <div class="navbar-nav">
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="authDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        Account
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="authDropdown">
-                        {% if not username %}
-                            <!-- Show Login and Register if not logged in -->
-                            <li>
-                                <a class="dropdown-item" href="{{ url_for('second.login') }}">
-                                    <i class="fas fa-sign-in-alt me-2"></i> Login
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="{{ url_for('second.register') }}">
-                                    <i class="fas fa-user-plus me-2"></i> Register
-                                </a>
-                            </li>
-                        {% else %}
-                            <!-- Show Logout only if logged in -->
-                            <li>
-                                <a class="dropdown-item" href="{{ url_for('second.account') }}">
-                                    <i class="fas fa-sign-out-alt me-2"></i> Account
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="{{ url_for('second.logout') }}">
-                                    <i class="fas fa-sign-out-alt me-2"></i> Logout
-                                </a>
-                            </li>
-                        {% endif %}
-                    </ul>
-                </li>
-            </div>
+          <div class="navbar-nav ms-auto">
+            {% if username %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="authDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <img 
+                        src="{{ url_for('static', filename='profile_pics/' + current_user.image_file) }}" 
+                        alt="Avatar" 
+                        class="rounded-circle me-2" 
+                        width="36" 
+                        height="36"
+                       >
+                    <span>{{ current_user.username }}</span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="authDropdown">
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('second.account') }}">
+                            <i class="fas fa-user me-2"></i> Account
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('second.logout') }}">
+                            <i class="fas fa-sign-out-alt me-2"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            {% else %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="authDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  Account
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="authDropdown">
+                  <li><a class="dropdown-item" href="{{ url_for('second.login') }}"><i class="fas fa-sign-in-alt me-2"></i> Login</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('second.register') }}"><i class="fas fa-user-plus me-2"></i> Register</a></li>
+                </ul>
+              </li>
+            {% endif %}
+          </div>
           </div>
         </div>
       </nav>
@@ -97,9 +101,31 @@
     <main role="main" class="container">
       <div class="row">
         <div class="col-md-8">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
           {% block content %}{% endblock %}
         </div>
-      </div>  
+        <div class="col-md-4">
+          <div class="content-section">
+            <h3>Our Sidebar</h3>
+            <p class='text-muted'>You can put any information here you'd like.
+              <ul class="list-group">
+                <a class="list-group-item list-group-item-light" href="/admin">Latest Posts</a>
+                <li class="list-group-item list-group-item-light">Announcements</li>
+                <li class="list-group-item list-group-item-light">Calendars</li>
+                <li class="list-group-item list-group-item-light">etc</li>
+              </ul>
+            </p>
+          </div>
+        </div>
+      </div>
     </main>
 
 <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
@@ -129,7 +155,7 @@
             <input type="email" class="form-control" id="modal-email" name="email" required>
           </div>
 
-          <div class="mb-3">
+          <!-- <div class="mb-3">
             <label for="modal-role" class="form-label">Role</label>
             <select class="form-control" id="modal-role" name="role" required>
               <option value="" disabled selected>Select a role</option>
@@ -137,7 +163,7 @@
               <option value="2">User</option>
               <option value="3">Staff</option>
             </select>
-          </div>
+          </div> -->
 
           <div class="mb-3">
             <label for="modal-password" class="form-label">Password</label>
@@ -201,14 +227,12 @@
           .catch(error => console.error("Error:", error));
       });
 
-            function openEditModal(id, name, email, role) {
-                document.getElementById('modal-user-id').value = id;
-                document.getElementById('modal-name').value = name;
-                document.getElementById('modal-email').value = email;
-                document.getElementById('modal-role').value = role;
-                document.getElementById('modal-password').value = "";
-            }
-
+       function openEditModal(id, name, email, password) {
+          document.getElementById('modal-user-id').value = id;
+          document.getElementById('modal-name').value = name;
+          document.getElementById('modal-email').value = email;
+          document.getElementById('modal-password').value = password;
+      }
     </script>
     
 </body>

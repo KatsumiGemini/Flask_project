@@ -1,11 +1,12 @@
 import os
 from PIL import Image
 import secrets
-from flask import Blueprint, render_template, request, url_for, flash, redirect, session, jsonify
+from flask import Blueprint, render_template, request, url_for, flash, redirect, session, jsonify, abort
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
-from .extensions import db
+from .extensions import db,  bcrypt
 from .models import User, Post
+from .forms import UpdateAccountForm, UpdatePost
 from flask_login import login_user, logout_user, current_user, login_required
 
 second = Blueprint('second', __name__, static_folder='static', template_folder='templates')
@@ -15,8 +16,7 @@ second = Blueprint('second', __name__, static_folder='static', template_folder='
 @second.route('/home')
 @login_required
 def home():
-    posts = Post.query.join(User).add_columns(User.username, Post.id, Post.title, Post.content, Post.date_posted)\
-                      .order_by(Post.date_posted.desc()).all()
+    posts = Post.query.order_by(Post.date_posted.desc()).all()
     return render_template('home.html', username=session.get('username'), posts=posts)
 
 # ---------------------- POST ------------------------
@@ -33,8 +33,10 @@ def create_blog():
 
         flash("Blog created successfully!", "success")
         return redirect(url_for("second.create_blog"))
+    
+    posts = Post.query.filter_by(user_id=current_user.id).order_by(Post.date_posted.desc()).all()
 
-    return render_template("post.html", username=current_user.username)
+    return render_template("post.html", username=current_user.username, posts=posts)
 
 # -------------------- USER DATA --------------------
 @second.route("/users")
@@ -61,7 +63,7 @@ def register():
             flash("Passwords do not match!", "danger")
             return redirect(url_for("second.register"))
 
-        hashed_password = generate_password_hash(password)
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         user = User(username=username, email=email, password=hashed_password, image_file="default.jpg")
         db.session.add(user)
         db.session.commit()
@@ -80,7 +82,7 @@ def login():
         password = request.form['password']
 
         user = User.query.filter_by(email=email).first()
-        if user and check_password_hash(user.password, password):
+        if user and bcrypt.check_password_hash(user.password, password):
             login_user(user)
             session['username'] = user.username
             flash('Login successful!', 'success')
@@ -89,7 +91,6 @@ def login():
             flash('Login Unsuccessful. Check email and password', 'danger')
 
     return render_template('login.html')
-
 
 # -------------------- LOGOUT --------------------
 @second.route("/logout")
@@ -109,8 +110,22 @@ def delete(id):
     flash('User deleted successfully!', 'success')
     return redirect(url_for('second.user_data'))
 
+@second.route("/post/<int:post_id>/delete", methods=["POST", "GET"])
+@login_required
+def delete_blog(post_id):
+    post = Post.query.get_or_404(post_id)
 
-# -------------------- UPDATE USER --------------------
+    # Check owner
+    if post.user_id != current_user.id:
+        flash("You are not authorized to delete this post.", "danger")
+        return redirect(url_for("second.create_blog"))
+
+    db.session.delete(post)
+    db.session.commit()
+    flash("Post deleted successfully!", "success")
+    return redirect(url_for("second.create_blog"))
+
+# -------------------- UPDATE --------------------
 
 @second.route("/update_user", methods=["POST"])
 @login_required
@@ -120,54 +135,65 @@ def update_user():
 
     user.username = request.form.get("name")
     user.email = request.form.get("email")
-    user.role_id = int(request.form["role"])
+    user.password = request.form.get("password")
 
     password = request.form.get("password")
     if password.strip():
-        user.password = generate_password_hash(password)
+        user.password = bcrypt.generate_password_hash(password)
 
     db.session.commit()
     return jsonify({"status": "success"})
 
+@second.route("/post/<int:post_id>/edit", methods=["POST"])
+@login_required
+def edit_blog(post_id):
+    post = Post.query.get_or_404(post_id)
+
+    if post.author != current_user:
+        flash("You cannot edit this post!", "danger")
+        return redirect(url_for("second.create_blog"))
+
+    post.title = request.form["title"]
+    post.content = request.form["content"]
+    db.session.commit()
+    flash("Post updated successfully!", "success")
+    return redirect(url_for("second.create_blog"))
+
 # -------------------- ACCOUNT UPDATE WITH PICTURE --------------------
 def save_picture(form_picture):
-    upload_folder = os.path.join('static', 'uploads')
-    os.makedirs(upload_folder, exist_ok=True)
-
     random_hex = secrets.token_hex(8)
     _, f_ext = os.path.splitext(form_picture.filename)
     picture_fn = random_hex + f_ext
-    picture_path = os.path.join(upload_folder, picture_fn)
+    picture_path = os.path.join(second.root_path, 'static/profile_pics', picture_fn)
 
+    output_size = (125, 125)
     i = Image.open(form_picture)
-    i.thumbnail((125, 125))
+    i.thumbnail(output_size)
     i.save(picture_path)
 
     return picture_fn
 
-@second.route("/account", methods=["GET", "POST"])
+
+@second.route("/account", methods=['GET', 'POST'])
 @login_required
 def account():
-    user = current_user
+    form = UpdateAccountForm()
 
-    if request.method == "POST":
-        user.username = request.form['username']
-        user.email = request.form['email']
+    if form.validate_on_submit():
+        if form.picture.data:
+            picture_file = save_picture(form.picture.data)
+            current_user.image_file = picture_file
 
-        if 'image' in request.files:
-            file = request.files['image']
-            if file.filename != '':
-                picture_file = save_picture(file)
-
-                if user.image:
-                    old_path = os.path.join('static/uploads', user.image)
-                    if os.path.exists(old_path):
-                        os.remove(old_path)
-
-                user.image = picture_file
-
+        current_user.username = form.username.data
+        current_user.email = form.email.data
         db.session.commit()
-        flash("Profile updated successfully!", "success")
+        flash('Your account has been updated!', 'success')
         return redirect(url_for('second.account'))
 
-    return render_template('account.html', user=user, username=user.username)
+    elif request.method == 'GET':
+        form.username.data = current_user.username
+        form.email.data = current_user.email
+
+    image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
+    return render_template('account.html', title='Account', image_file=image_file, form=form)
+

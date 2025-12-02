@@ -1,34 +1,63 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Update Profile</h1>
+{% for message in get_flashed_messages() %}
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+{% endfor %}
+    <div class="content-section">
+      <div class="media">
+        <img class="rounded-circle account-img" src="{{ image_file }}">
+        <div class="media-body">
+          <h2 class="account-heading">{{ current_user.username }}</h2>
+          <p class="text-secondary">{{ current_user.email }}</p>
+        </div>
+      </div>
+        <form method="POST" action="" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+            <fieldset class="form-group">
+                <legend class="border-bottom mb-4">Account Info</legend>
+                <div class="form-group">
+                    {{ form.username.label(class="form-control-label") }}
 
-<!-- {% for message in get_flashed_messages() %}
-    <div class="alert alert-info">{{ message }}</div>
-{% endfor %} -->
-
-<form method="POST" action="{{ url_for('second.account') }}" enctype="multipart/form-data">
-    <div class="mb-3">
-        <label for="profile-image" class="form-label">Profile Image</label>
-        {% if user.image %}
-            <div>
-                <img src="{{ url_for('static', filename='uploads/' ~ user.image) }}" 
-                     alt="Profile Image" class="img-thumbnail mb-2" width="125">
+                    {% if form.username.errors %}
+                        {{ form.username(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in form.username.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ form.username(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ form.email.label(class="form-control-label") }}
+                    {% if form.email.errors %}
+                        {{ form.email(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in form.email.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ form.email(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ form.picture.label() }}
+                    {{ form.picture(class="form-control-file") }}
+                    {% if form.picture.errors %}
+                        {% for error in form.picture.errors %}
+                            <span class="text-danger">{{ error }}</span></br>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </fieldset>
+            <div class="form-group">
+                {{ form.submit(class="btn btn-outline-info") }}
             </div>
-        {% endif %}
-        <input type="file" class="form-control" id="profile-image" name="image">
+        </form>
     </div>
-
-    <div class="mb-3">
-        <label for="username" class="form-label">Username</label>
-        <input type="text" class="form-control" id="username" name="username" value="{{ user.name }}" required>
-    </div>
-
-    <div class="mb-3">
-        <label for="email" class="form-label">Email</label>
-        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Save Changes</button>
-</form>
-
 {% endblock content %}
