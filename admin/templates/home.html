@@ -1,14 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
   
-<div class="content-section">
-   <form method="GET" action="{{ url_for('second.home') }}">
-      <div class="form-group">
-         <input class="form-control form-control-lg" type="text" name="search" placeholder="Search posts or author names...">
-         <button class="btn btn-outline-info mt-2" type="submit">Search</button>
-      </div>
-   </form>
-</div>
+<form method="GET" action="{{ url_for('second.home') }}" class="d-flex mb-4">
+    <input type="text" name="q" class="form-control" placeholder="Search title or author..." 
+           value="{{ request.args.get('q', '') }}">
+    <button class="btn btn-primary ms-2">Search</button>
+</form>
 
 <div class="mt-5">
    {% for post in posts.items %}
@@ -16,23 +13,31 @@
          <img class="rounded-circle article-img" 
               src="{{ url_for('static', filename='profile_pics/' + post.author.image_file) }}"
               alt="{{ post.author.username }} profile picture">
+
         <div class="media-body text-start"> 
           <div class="article-metadata">
             <a class="mr-2" href="#">{{ post.author.username }}</a>
             <small class="text-muted">{{ post.date_posted }}</small>
           </div>
+
           <h2><a class="article-title" href="#">{{ post.title }}</a></h2>
           <p class="article-content">{{ post.content }}</p>
         </div>
       </article>
    {% endfor %}
+
+   <!-- Pagination -->
    {% for page_num in posts.iter_pages() %}
       {% if page_num %}
-         <a class="btn btn-outline-info mb-4" href="{{ url_for('second.home', page=page_num)}}">{{ page_num }}</a>
+         <a class="btn btn-outline-info mb-4"
+            href="{{ url_for('second.home', page=page_num, q=request.args.get('q')) }}">
+            {{ page_num }}
+         </a>
       {% else %}
-      ...
+      ... 
       {% endif %}
    {% endfor %}
 </div>
+
 
 {% endblock content %}

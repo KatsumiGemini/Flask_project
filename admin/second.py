@@ -18,8 +18,17 @@ second = Blueprint('second', __name__, static_folder='static', template_folder='
 @login_required
 def home():
     page = request.args.get('page', 1, type=int)
-    posts = Post.query.order_by(Post.date_posted.desc()).paginate(page=page, per_page=10)
-    return render_template('home.html', username=session.get('username'), posts=posts)
+    q = request.args.get('q', '')
+
+    if q:
+        posts = Post.query.join(User).filter(
+            (Post.title.ilike(f"%{q}%")) | 
+            (User.username.ilike(f"%{q}%"))
+        ).order_by(Post.date_posted.desc()).paginate(page=page, per_page=10)
+    else:
+        posts = Post.query.order_by(Post.date_posted.desc()).paginate(page=page, per_page=10)
+
+    return render_template('home.html', username=session.get('username'), posts=posts, search_query=q)
 
 # ---------------------- POST ------------------------
 @second.route("/post", methods=["GET", "POST"])
@@ -255,3 +264,19 @@ def reset_password(token):
         return redirect(url_for('second.login'))
 
     return render_template("reset_password.html", token=token, title='Reset Password', legend="Reset Password")
+
+# ---------------------------SEARCH BLOG----------------------------------
+# @second.route("/search")
+# def search():
+#     query = request.args.get("q", "")
+
+#     if not query:
+#         flash("Please enter a search term.", "warning")
+#         return redirect(url_for("second.dashboard"))
+
+#     results = Content.query.filter(
+#         (Content.title.ilike(f"%{query}%")) |
+#         (Content.author.ilike(f"%{query}%"))
+#     ).all()
+
+#     return render_template("search_results.html", results=results, query=query)
