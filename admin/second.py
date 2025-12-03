@@ -4,10 +4,11 @@ import secrets
 from flask import Blueprint, render_template, request, url_for, flash, redirect, session, jsonify, abort
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
-from .extensions import db,  bcrypt
+from .extensions import db,  bcrypt, mail
 from .models import User, Post
-from .forms import UpdateAccountForm, UpdatePost
+from .forms import UpdateAccountForm, UpdatePost, PasswordResetRequestForm
 from flask_login import login_user, logout_user, current_user, login_required
+from flask_mail import Message
 
 second = Blueprint('second', __name__, static_folder='static', template_folder='templates')
 
@@ -16,7 +17,8 @@ second = Blueprint('second', __name__, static_folder='static', template_folder='
 @second.route('/home')
 @login_required
 def home():
-    posts = Post.query.order_by(Post.date_posted.desc()).all()
+    page = request.args.get('page', 1, type=int)
+    posts = Post.query.order_by(Post.date_posted.desc()).paginate(page=page, per_page=10)
     return render_template('home.html', username=session.get('username'), posts=posts)
 
 # ---------------------- POST ------------------------
@@ -47,7 +49,7 @@ def user_data():
     except Exception as err:
         flash(f"Database Error: {err}", "danger")
         data = []
-    return render_template('users.html', title='User Page', data=data)
+    return render_template('users.html', title='User Page', data=data, username=session.get('username'))
 
 # -------------------- REGISTER --------------------
 
@@ -195,5 +197,61 @@ def account():
         form.email.data = current_user.email
 
     image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
-    return render_template('account.html', title='Account', image_file=image_file, form=form)
+    return render_template('account.html', title='Account', image_file=image_file, form=form, username=session.get('username'))
 
+# ---------------------------------RESET PASSWORD---------------------------------------
+def send_reset_email(user):
+    token = user.get_reset_token()
+    msg = Message("Password Reset Request", recipients=[user.email])
+
+    reset_url = url_for('second.reset_password', token=token, _external=True)
+
+    msg.body = f'''To reset your password, click the link below:
+
+    {reset_url}
+
+    If you did not make this request, simply ignore this email.
+    '''
+    mail.send(msg)
+
+@second.route("/reset_password", methods=['GET', 'POST'])
+def reset_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('second.home'))
+
+    form = PasswordResetRequestForm()
+
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        send_reset_email(user)
+        flash("A password reset link has been sent to your email.", "success")
+        return redirect(url_for('second.login'))
+
+    return render_template("reset_request.html", form=form, legend="Reset Password")
+
+@second.route("/reset_password/<token>", methods=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('second.home'))
+
+    user = User.verify_reset_token(token)
+    if user is None:
+        flash("Invalid or expired token.", "danger")
+        return redirect(url_for('second.reset_request'))
+
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
+        if password != confirm_password:
+            flash("Passwords do not match. Please try again.", "danger")
+            return redirect(url_for('second.reset_password', token=token))
+
+        hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
+        user.password = hashed_pw
+        db.session.commit()
+
+        flash("Your password has been updated!", "success")
+        return redirect(url_for('second.login'))
+
+    return render_template("reset_password.html", token=token, title='Reset Password', legend="Reset Password")

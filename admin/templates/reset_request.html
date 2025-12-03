@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Reset Password</h1>
+
+<form method="POST">
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+        {{ form.email.label }}
+        {{ form.email(class="form-control") }}
+    </div>
+
+    {{ form.submit(class="btn btn-outline-info") }}
+</form>
+{% endblock %}
