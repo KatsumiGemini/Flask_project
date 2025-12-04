@@ -16,24 +16,27 @@ def create_app():
     DB_PASSWORD = os.getenv("DB_PASSWORD")
     DB_HOST = os.getenv("DB_HOST")
     DB_NAME = os.getenv("DB_NAME")
-
-    user = 'testman'
-    password = 'Jhayg3309]]:P' 
-    mysql_url = 'vultr-prod-85f8d360-5bbf-4d05-ad2d-01cc47768728-vultr-prod-995c.vultrdb.com'
-    port_num = '16751' 
+    DB_PORT = os.getenv("DB_PORT")
 
     app.config['SQLALCHEMY_DATABASE_URI'] = (
-        f'mysql+pymysql://{user}:{password}@{mysql_url}:{port_num}/sample_crud'
+        f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
     )
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # Reset password requesnt mail
-    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-    app.config['MAIL_PORT'] = 587
-    app.config['MAIL_USE_TLS'] = True
-    app.config['MAIL_USERNAME'] = 'nakanohirumo@gmail.com'
-    app.config['MAIL_PASSWORD'] = 'ytfb jipo ljou qeqm'
-    app.config['MAIL_DEFAULT_SENDER'] = 'nakanohirumo@gmail.com'
+    MAIL_SERVER = os.getenv('MAIL_SERVER')
+    MAI_PORT = os.getenv('MAI_PORT')
+    MAIL_USE_TLS = os.getenv('MAIL_USE_TLS')
+    MAIL_USERNAME = os.getenv('MAIL_USERNAME')
+    MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
+    MAIL_DEFAULT_SENDER= os.getenv('MAIL_DEFAULT_SENDER')
+    
+    app.config['MAIL_SERVER'] = MAIL_SERVER
+    app.config['MAIL_PORT'] = MAI_PORT
+    app.config['MAIL_USE_TLS'] = MAIL_USE_TLS
+    app.config['MAIL_USERNAME'] = MAIL_USERNAME
+    app.config['MAIL_PASSWORD'] = MAIL_PASSWORD
+    app.config['MAIL_DEFAULT_SENDER'] = MAIL_DEFAULT_SENDER
 
     # Initialize extensions
     db.init_app(app)
@@ -43,8 +46,8 @@ def create_app():
     login_manager.login_view = 'second.login'
 
     # Register blueprint
-    from .second import second
-    app.register_blueprint(second, url_prefix="/admin")
+    from .routes import second
+    app.register_blueprint(second, url_prefix="/")
 
     # User loader
     from .models import User

@@ -280,3 +280,13 @@ def reset_password(token):
 #     ).all()
 
 #     return render_template("search_results.html", results=results, query=query)
+
+# ------------------------------User Account View---------------------------
+# Assuming 'second' is your Blueprint instance
+
+@second.route("/user/<string:username>")
+def user_profile_view(username):
+    
+    user = User.query.filter_by(username=username).first_or_404()
+    
+    return render_template('view_account.html', user=user)
