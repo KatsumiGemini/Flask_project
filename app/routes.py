@@ -152,9 +152,9 @@ def update_user():
     if password.strip():
         user.password = bcrypt.generate_password_hash(password)
 
-    db.session.commit()
+    db.session.commit() 
     return jsonify({"status": "success"})
-
+                                                                                                        
 @second.route("/post/<int:post_id>/edit", methods=["POST"])
 @login_required
 def edit_blog(post_id):
