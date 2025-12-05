@@ -47,7 +47,9 @@ def create_app():
 
     # Register blueprint
     from .routes import second
+    from .errors.handlers import errors
     app.register_blueprint(second, url_prefix="/")
+    app.register_blueprint(errors)
 
     # User loader
     from .models import User

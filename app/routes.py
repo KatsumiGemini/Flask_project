@@ -284,9 +284,18 @@ def reset_password(token):
 # ------------------------------User Account View---------------------------
 # Assuming 'second' is your Blueprint instance
 
+@second.route("/post/<int:post_id>")
+def post_detail(post_id):
+    post = Post.query.get_or_404(post_id)
+    return render_template("post_detail.html", post=post, username=session.get('username'))
+
 @second.route("/user/<string:username>")
 def user_profile_view(username):
     
+    page = request.args.get('page', 1, type=int)
     user = User.query.filter_by(username=username).first_or_404()
+    posts = Post.query.filter_by(author=user)\
+        .order_by(Post.date_posted.desc())\
+        .paginate(page=page, per_page=5)
     
-    return render_template('view_account.html', user=user)
+    return render_template('view_account.html', user=user, posts=posts, username=session.get('username'))

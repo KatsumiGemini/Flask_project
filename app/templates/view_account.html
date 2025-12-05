@@ -1,37 +1,53 @@
 {% extends "base.html" %}
 {% block content %}
-    <div class="account-container">
-
-      <div class="content-section">
-          <div class="media">
-            <img src="{{ user.profile_pic }}" alt="Profile Picture" class="profile-pic">
-            <div class="account-info">
-                <h1>{{ user.first_name }} {{ user.last_name }}</h1>
-                <p class="username">@{{ user.username }}</p>
-                <p class="bio">{{ user.bio }}</p>
-            </div>
-        </div>
-    </div>
-
-        <div class="account-stats">
-            <div class="stat">
-                <span class="stat-number">{{ user.posts | length }}</span> 
-                <span class="stat-label">Posts</span>
-            </div>
-        </div>
-
-        {% for post in user.posts %}
-         <article class="media content-section">
-            <div class="account-posts">
-                <h2>Posts</h2>
-                
-                    <div class="post">
-                        <p>{{ post.content }}</p>
-                        <small>{{ post.created_at }}</small>
-                    </div>
-            </div>
-         </article>
-        {% endfor %}
-    </div>
+    <div class="d-flex align-items-center p-3 mb-4 bg-light rounded shadow-sm"style="border-bottom: 5px solid #428bca;">
     
+        <!-- Profile Picture -->
+        <img src="{{ url_for('static', filename='profile_pics/' + user.image_file) }}" 
+            class="rounded-circle me-3" 
+            style="width: 80px; height: 80px; object-fit: cover;"
+            alt="{{ user.username }}">
+
+        <!-- User Info -->
+        <div>
+            <h2 class="mb-1">{{ user.username }}</h2>
+            <p class="text-muted mb-0">
+                Posts: <strong>{{ posts.total }}</strong>
+            </p>
+        </div>
+    </div>
+    {% for post in posts.items %}
+        <article class="media content-section">
+          <img class="rounded-circle article-img" src="{{ url_for('static', filename='profile_pics/' + post.author.image_file) }}">
+          <div class="media-body">
+            <div class="article-metadata">
+                <a class="mr-2" href="{{ url_for('second.user_profile_view', username=post.author.username) }}">
+                    {{ post.author.username }}
+                </a>            
+                <small class="text-muted">{{ post.date_posted.strftime('%Y-%m-%d') }}</small>
+            </div>
+            <h2>
+                <a class="article-title" href="{{ url_for('second.post_detail', post_id=post.id) }}">
+                    {{ post.title }}
+                </a>
+            </h2>
+            <p class="article-content">{{ post.content }}</p>
+          </div>
+        </article>
+
+    {% endfor %}
+    {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+      {% if page_num %}
+        {% if posts.page == page_num %}
+          <a class="btn btn-info mb-4" href="{{ url_for('second.user_data', username=user.username, page=page_num) }}">{{ page_num }}</a>
+        {% else %}
+            <a class="btn btn-outline-info mb-4"
+            href="{{ url_for('second.user_profile_view', username=user.username, page=page_num) }}">
+            {{ page_num }}
+            </a>
+        {% endif %}
+      {% else %}
+        ...
+      {% endif %}
+    {% endfor %}
 {% endblock content %}

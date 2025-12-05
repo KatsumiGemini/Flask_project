@@ -19,8 +19,11 @@
             <a class="mr-2" href="{{ url_for('second.user_profile_view', username=post.author.username) }}">{{ post.author.username }}</a>
             <small class="text-muted">{{ post.date_posted }}</small>
           </div>
-
-          <h2><a class="article-title" href="#">{{ post.title }}</a></h2>
+          <h2>
+              <a class="article-title" href="{{ url_for('second.post_detail', post_id=post.id) }}">
+                  {{ post.title }}
+              </a>
+          </h2>
           <p class="article-content">{{ post.content }}</p>
         </div>
       </article>
