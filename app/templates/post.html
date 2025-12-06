@@ -1,35 +1,6 @@
 {% extends "base.html" %}
 
 {% block content %}
-
-<!-- <div class="content-section">
-    <form method="POST" action="{{ url_for('second.create_blog') }}">
-        <fieldset class="form-group">
-            <legend class="border-bottom mb-4"></legend>
-            <h1>CREATE A BLOG</h1>
-            <div class="form-group mb-3">
-                <label for="title" class="form-control-label">Title</label>
-                <input type="text" id="title" name="title" class="form-control form-control-lg" required>
-            </div>
-
-            <div class="form-group mb-3">
-                <label for="content" class="form-control-label">Content</label>
-                <textarea id="content" name="content" class="form-control form-control-lg" rows="5" required></textarea>
-            </div>
-
-            <div class="form-group" id="process" style="display:none;">
-              <div class="progress">
-                <div class="progress-bar progress-bar-striped" role="progressbar" style="width: 10%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
-              </div>
-            </div>
-
-        </fieldset>
-
-        <div class="form-group">
-            <button type="submit" class="btn btn-outline-info">Submit</button>
-        </div>
-    </form>
-</div> -->
 <div class="content-section">
     <form method="POST" action="">
       {{ form.hidden_tag() }}
