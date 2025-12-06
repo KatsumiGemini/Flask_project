@@ -1,5 +1,5 @@
 from flask import Flask
-from .extensions import db, login_manager, bcrypt,mail
+from .main.extensions import db, login_manager, bcrypt,mail
 from dotenv import load_dotenv
 import os
 
@@ -25,14 +25,14 @@ def create_app():
 
     # Reset password requesnt mail
     MAIL_SERVER = os.getenv('MAIL_SERVER')
-    MAI_PORT = os.getenv('MAI_PORT')
+    MAIL_PORT = os.getenv('MAIL_PORT')
     MAIL_USE_TLS = os.getenv('MAIL_USE_TLS')
     MAIL_USERNAME = os.getenv('MAIL_USERNAME')
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER= os.getenv('MAIL_DEFAULT_SENDER')
     
     app.config['MAIL_SERVER'] = MAIL_SERVER
-    app.config['MAIL_PORT'] = MAI_PORT
+    app.config['MAIL_PORT'] = MAIL_PORT
     app.config['MAIL_USE_TLS'] = MAIL_USE_TLS
     app.config['MAIL_USERNAME'] = MAIL_USERNAME
     app.config['MAIL_PASSWORD'] = MAIL_PASSWORD
@@ -46,7 +46,7 @@ def create_app():
     login_manager.login_view = 'second.login'
 
     # Register blueprint
-    from .routes import second
+    from .main.routes import second
     from .errors.handlers import errors
     app.register_blueprint(second, url_prefix="/")
     app.register_blueprint(errors)

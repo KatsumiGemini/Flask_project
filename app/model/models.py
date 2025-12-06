@@ -1,4 +1,4 @@
-from ..extensions import db
+from ..main.extensions import db
 from itsdangerous import Serializer
 from flask_login import UserMixin
 from flask import current_app
