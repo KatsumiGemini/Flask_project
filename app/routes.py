@@ -5,8 +5,8 @@ from flask import Blueprint, render_template, request, url_for, flash, redirect,
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from .extensions import db,  bcrypt, mail
-from .models import User, Post
-from .forms import UpdateAccountForm, UpdatePost, PasswordResetRequestForm
+from .model.models import User, Post
+from .form.forms import UpdateAccountForm, UpdatePost, PasswordResetRequestForm
 from flask_login import login_user, logout_user, current_user, login_required
 from flask_mail import Message
 
