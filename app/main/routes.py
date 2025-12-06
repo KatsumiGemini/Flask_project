@@ -6,7 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from .extensions import db,  bcrypt, mail
 from ..model.models import User, Post
-from ..form.forms import UpdateAccountForm, UpdatePost, PasswordResetRequestForm
+from ..form.forms import UpdateAccountForm, UpdatePost, PasswordResetRequestForm,PostForm
 from flask_login import login_user, logout_user, current_user, login_required
 from flask_mail import Message
 
@@ -34,20 +34,17 @@ def home():
 @second.route("/post", methods=["GET", "POST"])
 @login_required
 def create_blog():
-    if request.method == "POST":
-        title = request.form['title']
-        content = request.form['content']
-
-        post = Post(title=title, content=content, user_id=current_user.id)
+    form = PostForm()
+    if form.validate_on_submit():
+        post = Post(title=form.title.data, content=form.content.data, user_id=current_user.id)
         db.session.add(post)
         db.session.commit()
 
         flash("Blog created successfully!", "success")
         return redirect(url_for("second.create_blog"))
-    
-    posts = Post.query.filter_by(user_id=current_user.id).order_by(Post.date_posted.desc()).all()
 
-    return render_template("post.html", username=current_user.username, posts=posts)
+    posts = Post.query.filter_by(user_id=current_user.id).order_by(Post.date_posted.desc()).all()
+    return render_template("post.html", username=current_user.username, posts=posts, form=form)
 
 # -------------------- USER DATA --------------------
 @second.route("/users")

@@ -2,27 +2,73 @@
 
 {% block content %}
 
-<div class="content-section">
-    <!-- CREATE BLOG FORM -->
+<!-- <div class="content-section">
     <form method="POST" action="{{ url_for('second.create_blog') }}">
         <fieldset class="form-group">
             <legend class="border-bottom mb-4"></legend>
             <h1>CREATE A BLOG</h1>
             <div class="form-group mb-3">
                 <label for="title" class="form-control-label">Title</label>
-                <input type="text" id="title" name="title" class="form-control form-control-lg">
+                <input type="text" id="title" name="title" class="form-control form-control-lg" required>
             </div>
 
             <div class="form-group mb-3">
                 <label for="content" class="form-control-label">Content</label>
-                <textarea id="content" name="content" class="form-control form-control-lg" rows="5"></textarea>
+                <textarea id="content" name="content" class="form-control form-control-lg" rows="5" required></textarea>
             </div>
+
+            <div class="form-group" id="process" style="display:none;">
+              <div class="progress">
+                <div class="progress-bar progress-bar-striped" role="progressbar" style="width: 10%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+            </div>
+
         </fieldset>
 
         <div class="form-group">
             <button type="submit" class="btn btn-outline-info">Submit</button>
         </div>
     </form>
+</div> -->
+<div class="content-section">
+    <form method="POST" action="">
+      {{ form.hidden_tag() }}
+      <fieldset class="form-group">
+          <legend class="border-bottom mb-4">{{ legend }}</legend>
+          
+          <div class="form-group">
+              {{ form.title.label(class="form-control-label") }}
+              {% if form.title.errors %}
+                  {{ form.title(class="form-control form-control-lg is-invalid") }}
+                  <div class="invalid-feedback">
+                      {% for error in form.title.errors %}
+                          <span>{{ error }}</span>
+                      {% endfor %}
+                  </div>
+              {% else %}
+                  {{ form.title(class="form-control form-control-lg") }}
+              {% endif %}
+          </div>
+
+          <div class="form-group">
+              {{ form.content.label(class="form-control-label") }}
+              {% if form.content.errors %}
+                  {{ form.content(class="form-control form-control-lg is-invalid") }}
+                  <div class="invalid-feedback">
+                      {% for error in form.content.errors %}
+                          <span>{{ error }}</span>
+                      {% endfor %}
+                  </div>
+              {% else %}
+                  {{ form.content(class="form-control form-control-lg") }}
+              {% endif %}
+          </div>
+      </fieldset>
+
+      <div class="form-group">
+          {{ form.submit(class="btn btn-outline-info") }}
+      </div>
+  </form>
 </div>
 
 <!-- POSTS LIST -->

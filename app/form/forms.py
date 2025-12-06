@@ -48,3 +48,14 @@ class PasswordResetRequestForm(FlaskForm):
         if user is None:
             raise ValidationError('There is no account with that email. You must register first.')
         
+class PostForm(FlaskForm):
+    title = StringField('Title', validators=[
+        DataRequired(message="Title is required"),
+        Length(min=3, max=100, message="Title must be between 3 and 100 characters")
+    ])
+    content = TextAreaField('Content', validators=[
+        DataRequired(message="Content cannot be empty"),
+        Length(min=10, message="Content must be at least 10 characters")
+    ])
+    submit = SubmitField('Post')
+        
