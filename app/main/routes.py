@@ -1,7 +1,7 @@
 import os
 from PIL import Image
 import secrets
-from flask import Blueprint, render_template, request, url_for, flash, redirect, session, jsonify, abort
+from flask import Blueprint, render_template, request, url_for, flash, redirect, session, jsonify, abort, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from .extensions import db,  bcrypt, mail
@@ -171,11 +171,17 @@ def edit_blog(post_id):
     return redirect(url_for("second.create_blog"))
 
 # -------------------- ACCOUNT UPDATE WITH PICTURE --------------------
+
 def save_picture(form_picture):
     random_hex = secrets.token_hex(8)
     _, f_ext = os.path.splitext(form_picture.filename)
     picture_fn = random_hex + f_ext
-    picture_path = os.path.join(second.root_path, 'static/profile_pics', picture_fn)
+
+    picture_path = os.path.join(
+        current_app.root_path, 'static/profile_pics', picture_fn
+    )
+
+    os.makedirs(os.path.dirname(picture_path), exist_ok=True)
 
     output_size = (125, 125)
     i = Image.open(form_picture)
@@ -183,7 +189,6 @@ def save_picture(form_picture):
     i.save(picture_path)
 
     return picture_fn
-
 
 @second.route("/account", methods=['GET', 'POST'])
 @login_required
