@@ -9,15 +9,14 @@ load_dotenv()
 def create_app():
     app = Flask(__name__)
 
-    # Secret Key from .env
     app.secret_key = os.getenv("FLASK_SECRET_KEY")
-
+    
     DB_USER = os.getenv("DB_USER")
     DB_PASSWORD = os.getenv("DB_PASSWORD")
     DB_HOST = os.getenv("DB_HOST")
     DB_NAME = os.getenv("DB_NAME")
     DB_PORT = os.getenv("DB_PORT")
-
+    
     app.config['SQLALCHEMY_DATABASE_URI'] = (
         f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
     )
@@ -27,7 +26,7 @@ def create_app():
     MAIL_SERVER = os.getenv('MAIL_SERVER')
     MAIL_PORT = os.getenv('MAIL_PORT')
     MAIL_USE_TLS = os.getenv('MAIL_USE_TLS')
-    MAIL_USERNAME = os.getenv('MAIL_USERNAME')
+    MAIL_USERNAME = os.getenv('MAIL_USERNAME')  
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER= os.getenv('MAIL_DEFAULT_SENDER')
     

@@ -1,17 +1,22 @@
 import os
 from PIL import Image
 import secrets
+import requests
+from pathlib import Path
 from flask import Blueprint, render_template, request, url_for, flash, redirect, session, jsonify, abort, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from .extensions import db,  bcrypt, mail
 from ..model.models import User, Post
-from ..form.forms import UpdateAccountForm, UpdatePost, PasswordResetRequestForm,PostForm
+from ..form.forms import UpdateAccountForm, UpdatePost, PasswordResetRequestForm,PostForm,RegistrationForm
 from flask_login import login_user, logout_user, current_user, login_required
 from flask_mail import Message
+from google_auth_oauthlib.flow import Flow
 
 second = Blueprint('second', __name__, static_folder='static', template_folder='templates')
 
+GOOGLE_CLIENT_ID ="837489797201-9q4ednmh0k7bbpq0ibf089itnrep7rvs.apps.googleusercontent.com"
+CLIENT_SECRETS_FILE = Path(__file__).parent / "client_secret.json"
 # ---------------------- HOME ------------------------
 @second.route('/')
 @second.route('/home')
@@ -29,6 +34,91 @@ def home():
         posts = Post.query.order_by(Post.date_posted.desc()).paginate(page=page, per_page=10)
 
     return render_template('home.html', username=session.get('username'), posts=posts, search_query=q)
+
+# -------------------------Google Auth Login----------------------------
+
+@second.route('/google_login')
+def google_login():
+    # 2. Create the Flow object
+    flow = Flow.from_client_secrets_file(
+            client_secrets_file=CLIENT_SECRETS_FILE,
+            scopes=["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email", "openid"],
+            # Add _scheme='https' here
+            redirect_uri=url_for('second.google_callback', _external=True, _scheme='http') 
+        )
+
+    # 3. Generate and store state (CSRF protection)
+    authorization_url, state = flow.authorization_url(
+        access_type='offline',
+        prompt='consent' 
+    )
+    
+    session['google_oauth_state'] = state
+    
+    # 4. Redirect
+    return redirect(authorization_url)
+
+@second.route('/callback')
+def google_callback():
+    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
+    flow = Flow.from_client_secrets_file(
+        client_secrets_file=CLIENT_SECRETS_FILE,
+        scopes=[
+            "https://www.googleapis.com/auth/userinfo.profile",
+            "https://www.googleapis.com/auth/userinfo.email",
+            "openid"
+        ],
+        redirect_uri=url_for('second.google_callback', _external=True, _scheme='http')
+    )
+
+    # Check state token
+    if request.args.get('state') != session.get('google_oauth_state'):
+        flash("Security error. Please try again.", "danger")
+        return redirect(url_for('second.login'))
+
+    # Fetch token + get user info
+    try:
+        flow.fetch_token(authorization_response=request.url)
+        credentials = flow.credentials
+
+        user_info = requests.get(
+            "https://www.googleapis.com/oauth2/v1/userinfo",
+            headers={"Authorization": f"Bearer {credentials.token}"}
+        ).json()
+    except Exception as e:
+        flash(f"Google Login failed: {e}", "danger")
+        return redirect(url_for('second.login'))
+
+    email = user_info.get("email")
+    full_name = user_info.get("name")
+    google_id = user_info.get("id")
+
+    # 📌 Generate username from Google name
+    username = full_name.replace(" ", "_").lower()
+
+    # Check if user exists
+    user = User.query.filter_by(email=email).first()
+
+    if not user:
+        # 📌 Create a fake password (not used)
+        fake_password = bcrypt.generate_password_hash("googleuser").decode('utf-8')
+
+        user = User(
+            username=username,
+            email=email,
+            password=fake_password,
+            image_file="default.jpg"
+        )
+        db.session.add(user)
+        db.session.commit()
+
+        flash("Google account registered successfully!", "success")
+    else:
+        flash("Welcome back!", "success")
+
+    login_user(user)
+    return redirect(url_for("second.home"))
 
 # ---------------------- POST ------------------------
 @second.route("/post", methods=["GET", "POST"])
@@ -99,6 +189,9 @@ def login():
             flash('Login Unsuccessful. Check email and password', 'danger')
 
     return render_template('login.html')
+
+# ------------------------Google Auth login---------------------------
+
 
 # -------------------- LOGOUT --------------------
 @second.route("/logout")
@@ -301,3 +394,4 @@ def user_profile_view(username):
         .paginate(page=page, per_page=5)
     
     return render_template('view_account.html', user=user, posts=posts, username=session.get('username'))
+
